@@ -1,19 +1,23 @@
-FROM node:4
+FROM node:6
 
-EXPOSE 3000
-
+# Install runtime dependencies
 RUN apt-get update \
-    && apt-get install -y \
-        build-essential g++ flex bison gperf ruby perl \
-        libsqlite3-dev libfontconfig1-dev libicu-dev libfreetype6 libssl-dev \
-        libpng-dev libjpeg-dev python libx11-dev libxext-dev
+ && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        bzip2 \
+        libfontconfig \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
 
-RUN git clone git://github.com/ariya/phantomjs.git \
-    && cd phantomjs \
-    && git checkout 2.0 \
-    && echo 'y' | ./build.sh
-
-RUN ln -s /phantomjs/bin/phantomjs /usr/local/bin/phantomjs
+RUN set -x  \
+    # Install official PhantomJS release
+ && apt-get update \
+ && apt-get install -y --no-install-recommends \
+        curl \
+ && mkdir /tmp/phantomjs \
+ && curl -L https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2 \
+        | tar -xj --strip-components=1 -C /tmp/phantomjs \
+ && mv /tmp/phantomjs/bin/phantomjs /usr/local/bin
 
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
@@ -21,5 +25,6 @@ WORKDIR /usr/src/app
 COPY package.json /usr/src/app/
 RUN npm install
 COPY . /usr/src/app
+EXPOSE 3000
 
 CMD [ "npm", "start" ]
